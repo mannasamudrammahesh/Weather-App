@@ -1,8 +1,8 @@
 # Weather App Project
 
-!Weather App Demo
+Weather App Demo
 <div style="display: flex; justify-content: center;">
-  <img width="521" height="888" alt="Weather App Demo" src="https://github.com/user-attachments/assets/338d6db2-3403-473c-8419-aea39e712b4c">
+  <img width="260" height="444" alt="Weather App Demo" src="https://github.com/user-attachments/assets/338d6db2-3403-473c-8419-aea39e712b4c">
 </div>
 
 ## Overview
