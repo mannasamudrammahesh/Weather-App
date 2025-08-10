@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-image: none;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    color: white;
+}
+
+body {
+    height: 100vh;
+    width: 100vw;
+    background: #0c0a09;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+#threejs-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.app-container {
+    position: relative;
+    width: 90%;
+    max-width: 420px;
+    height: auto;
+    background-color: rgba(30, 30, 30, 0.5);
+    background-image: var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
+    border-radius: 20px;
+    padding: 25px 30px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    z-index: 1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    transition: background-image 1s ease-in-out;
+}
+
+.search-box {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.search-box input {
+    height: 45px;
+    flex: 1;
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 25px;
+    color: #1e1e1e;
+    background-color: rgba(235, 255, 252, 0.9);
+    border: 1px solid transparent;
+    outline: none;
+    margin-right: 10px;
+    transition: all 0.3s ease;
+}
+.search-box input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+#search {
+    background-color: #ebfffc;
+    border-radius: 50%;
+    border: none;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+#search svg { stroke: #1e1e1e; }
+#search:hover { background-color: #d1fae5; }
+
+.weather { display: none; }
+
+.error {
+    text-align: center;
+    margin: 20px 0;
+    font-size: 14px;
+    color: #f87171;
+    display: none;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.weather-icon {
+    width: 100px;
+    height: 100px;
+    margin-top: 10px;
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+}
+
+#temp { font-size: 4rem; font-weight: 600; }
+#city { font-size: 2rem; font-weight: 400; margin-top: -10px; }
+#condition { font-size: 1.1rem; text-transform: capitalize; }
+
+.details {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 30px;
+    gap: 20px;
+}
+
+.col { display: flex; align-items: center; text-align: left; }
+.col svg { width: 24px; height: 24px; margin-right: 10px; opacity: 0.8; }
+.col p:first-of-type { font-size: 1.2rem; }
+.col p:last-child { font-size: 0.8rem; opacity: 0.8; }
+
+.forecast-container {
+    margin-top: 25px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.forecast-day {
+    text-align: center;
+    padding: 10px 5px;
+    background: rgba(30, 30, 30, 0.5); /* Removed glass effect, using solid color */
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+.forecast-day img { width: 40px; height: 40px; }
+.forecast-day div:first-child { font-weight: 600; }
+
+#preloader {
+    background-color: #0c0a09;
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.loader {
+    width: 50px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 8px solid #514b82;
+    border-right-color: #766df4;
+    animation: l2 1s infinite linear;
+}
+@keyframes l2 { to { transform: rotate(1turn); } }
