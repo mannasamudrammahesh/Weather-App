@@ -6,13 +6,11 @@ const forecastContainer = document.querySelector("#forecast-container");
 const weatherDisplay = document.querySelector(".weather");
 const errorDisplay = document.querySelector(".error");
 
-
-const weatherApiKey = window.ENV?.VITE_WEATHER_API_KEY || 'fallback_key';
-const unsplashApiKey = window.ENV?.VITE_UNSPLASH_API_KEY || 'fallback_key';
+const weatherApiKey = import.meta.env.VITE_WEATHER_API_KEY || process.env.VITE_WEATHER_API_KEY || 'fallback_key';
+const unsplashApiKey = import.meta.env.VITE_UNSPLASH_API_KEY || process.env.VITE_UNSPLASH_API_KEY || 'fallback_key';
 
 const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&q=`;
 const unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=1&query=`;
-
 
 let scene, camera, renderer, currentAnimation, clock;
 
@@ -34,7 +32,6 @@ function initThreeJS() {
     directionalLight.castShadow = true;
     scene.add(directionalLight);
 }
-
 
 function createRain() {
     const particleCount = 5000;
@@ -366,7 +363,7 @@ function createNightClear() {
         opacity: 0.95
     });
     const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-    moon.position.set(150, 100, -200); // Adjusted to top-right
+    moon.position.set(150, 100, -200);
     group.add(moon);
 
     const glowLayers = [];
@@ -407,7 +404,7 @@ function createNightClear() {
 
 function createSunny() {
     const group = new THREE.Group();
-    const sunPosition = new THREE.Vector3(150, 100, -200); // Adjusted to top-right of the browser view
+    const sunPosition = new THREE.Vector3(150, 100, -200);
 
     const sunGeometry = new THREE.SphereGeometry(10, 64, 64);
     const sunMaterial = new THREE.ShaderMaterial({
@@ -544,7 +541,6 @@ function createSunny() {
     const particles = new THREE.Points(particleGeometry, particleMaterial);
     group.add(particles);
 
-    
     const glowLayers = [];
     for (let i = 0; i < 4; i++) {
         const glowGeometry = new THREE.SphereGeometry(15 + i * 8, 64, 64);
@@ -591,7 +587,7 @@ function createMist() {
 
     const mistShader = {
         uniforms: {
-            u_color: { value: new THREE.Color(0xdddddd) }, // Grayish for mist
+            u_color: { value: new THREE.Color(0xdddddd) },
             u_time: { value: 0 },
             u_noise_scale: { value: 2.0 },
             u_opacity: { value: 0.4 }
@@ -624,7 +620,7 @@ function createMist() {
             float fbm(vec2 p) {
                 float value = 0.0;
                 float amplitude = 0.5;
-                for (int i = 0; i < 5; i++) { // Increased octaves for smoother, more realistic mist
+                for (int i = 0; i < 5; i++) {
                     value += amplitude * noise(p);
                     p *= 2.0;
                     amplitude *= 0.5;
@@ -633,16 +629,16 @@ function createMist() {
             }
             void main() {
                 float dist = distance(vUv, vec2(0.5));
-                float circle_mask = 1.0 - smoothstep(0.3, 0.6, dist); // Softer edges
-                vec2 noise_uv = vUv + vec2(u_time * 0.03, u_time * 0.02); // Slower movement for realism
+                float circle_mask = 1.0 - smoothstep(0.3, 0.6, dist);
+                vec2 noise_uv = vUv + vec2(u_time * 0.03, u_time * 0.02);
                 float noise_val = fbm(noise_uv * u_noise_scale) * 1.2;
-                float alpha = circle_mask * noise_val * u_opacity * (0.8 + sin(u_time * 0.5) * 0.2); // Gentle pulsing
+                float alpha = circle_mask * noise_val * u_opacity * (0.8 + sin(u_time * 0.5) * 0.2);
                 gl_FragColor = vec4(u_color, alpha);
             }
         `
     };
 
-    for (let i = 0; i < 30; i++) { // More layers for denser mist
+    for (let i = 0; i < 30; i++) {
         const planeGeometry = new THREE.PlaneGeometry(150, 150);
         const mistMaterial = new THREE.ShaderMaterial({
             ...mistShader,
@@ -656,14 +652,14 @@ function createMist() {
         const mist = new THREE.Mesh(planeGeometry, mistMaterial);
         mist.position.set(
             (Math.random() - 0.5) * 600,
-            20 + Math.random() * 40, // Lower position for ground-level mist
+            20 + Math.random() * 40,
             -100 - Math.random() * 150
         );
         mist.scale.setScalar(2.0 + Math.random() * 1.0);
 
         mists.push({
             mesh: mist,
-            speed: 0.02 + Math.random() * 0.04, // Slower speed for drifting mist
+            speed: 0.02 + Math.random() * 0.04,
             initialY: mist.position.y,
             bobSpeed: 0.0002 + Math.random() * 0.0003,
             noiseScale: 1.5 + Math.random() * 2.0,
@@ -672,7 +668,6 @@ function createMist() {
         group.add(mist);
     }
 
-    // Add particle system for volumetric feel
     const particleCount = 2000;
     const particles = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
@@ -730,7 +725,7 @@ function createMist() {
                     mist.mesh.position.x = -400;
                 }
 
-                mist.mesh.position.y = mist.initialY + Math.sin(time * mist.bobSpeed * 500 + index) * 5; // Subtle bobbing
+                mist.mesh.position.y = mist.initialY + Math.sin(time * mist.bobSpeed * 500 + index) * 5;
 
                 mist.mesh.material.uniforms.u_time.value = time;
                 mist.mesh.material.uniforms.u_noise_scale.value = mist.noiseScale;
@@ -745,13 +740,12 @@ function createMist() {
 }
 
 function createClearDay() {
-    return createSunny(); // Alias to sunny for clear day
+    return createSunny();
 }
 
 function createClearNight() {
-    return createNightClear(); // Alias to night_clear for clear night
+    return createNightClear();
 }
-
 
 function clearScene() {
     while(scene.children.length > 0){
@@ -836,7 +830,6 @@ function animate() {
     }
     renderer.render(scene, camera);
 }
-
 
 async function fetchWeatherAndImage(location) {
     if (!location.trim()) return;
@@ -954,7 +947,6 @@ function updateForecastData(data) {
     });
 }
 
-
 searchBtn.addEventListener('click', () => fetchWeatherAndImage(searchBox.value));
 searchBox.addEventListener('keypress', (e) => { if (e.key === 'Enter') fetchWeatherAndImage(searchBox.value); });
 
@@ -973,7 +965,8 @@ window.addEventListener('load', () => {
         console.error("Three.js initialization error:", error);
     }
     setTimeout(() => {
-        document.getElementById("preloader").style.display = "none";
+        const preloader = document.getElementById("preloader");
+        if (preloader) preloader.style.display = "none";
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => fetchWeatherAndImage(`${position.coords.latitude},${position.coords.longitude}`),
