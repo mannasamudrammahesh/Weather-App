@@ -9,6 +9,12 @@ const errorDisplay = document.querySelector(".error");
 const weatherApiKey = import.meta.env.VITE_WEATHER_API_KEY;
 const unsplashApiKey = import.meta.env.VITE_UNSPLASH_API_KEY;
 
+if (!weatherApiKey || !unsplashApiKey) {
+    console.error('API keys not found. Please check your environment variables.');
+    console.log('Weather API Key:', weatherApiKey ? 'Found' : 'Missing');
+    console.log('Unsplash API Key:', unsplashApiKey ? 'Found' : 'Missing');
+}
+
 const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&q=`;
 const unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=1&query=`;
 
