@@ -6,8 +6,9 @@ const forecastContainer = document.querySelector("#forecast-container");
 const weatherDisplay = document.querySelector(".weather");
 const errorDisplay = document.querySelector(".error");
 
-const weatherApiKey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-const unsplashApiKey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+const weatherApiKey = import.meta.env.VITE_WEATHER_API_KEY;
+const unsplashApiKey = import.meta.env.VITE_UNSPLASH_API_KEY;
+
 const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&q=`;
 const unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=1&query=`;
 
