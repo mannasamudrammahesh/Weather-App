@@ -1,7 +1,7 @@
 # Weather App Project
 
-<div align="center">
   <h2>Weather App Demo</h2>
+<div align="center">
   <img width="260" height="444" alt="Weather App Demo" src="https://github.com/user-attachments/assets/338d6db2-3403-473c-8419-aea39e712b4c">
 </div>
 
