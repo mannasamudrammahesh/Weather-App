@@ -6,7 +6,7 @@ const forecastContainer = document.querySelector("#forecast-container");
 const weatherDisplay = document.querySelector(".weather");
 const errorDisplay = document.querySelector(".error");
 
-const weatherApiKey = 'dd44ed76fc4b4fefa7245841250908';
+const weatherApiKey = '1125a8453e97478ca1a62625251108';
 const unsplashApiKey = 'Rvrw-Il7hoUXrrDuQIFF-s7aUE7ffJBBiprVUqsoYVo';
 const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&q=`;
 const unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=1&query=`;
