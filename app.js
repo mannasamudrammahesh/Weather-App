@@ -6,11 +6,9 @@ const forecastContainer = document.querySelector("#forecast-container");
 const weatherDisplay = document.querySelector(".weather");
 const errorDisplay = document.querySelector(".error");
 
-const weatherApiKey = window.ENV?.WEATHER_API_KEY || 'fallback_key';
-const unsplashApiKey = window.ENV?.UNSPLASH_API_KEY || 'fallback_key';
-
-const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&q=`;
-const unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=1&query=`;
+// Use Netlify Functions instead of direct API calls
+const weatherApiUrl = `/.netlify/functions/weather?location=`;
+const unsplashApiUrl = `/.netlify/functions/unsplash?query=`;
 
 let scene, camera, renderer, currentAnimation, clock;
 
@@ -835,9 +833,28 @@ async function fetchWeatherAndImage(location) {
     if (!location.trim()) return;
 
     try {
-        const weatherResponse = await fetch(`${weatherApiUrl}${encodeURIComponent(location)}`);
-        if (!weatherResponse.ok) throw new Error('City not found');
+        // Add additional debugging and error handling
+        console.log('Fetching weather for:', location);
+        console.log('API URL:', weatherApiUrl + encodeURIComponent(location));
+        
+        const weatherResponse = await fetch(`${weatherApiUrl}${encodeURIComponent(location)}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        console.log('Response status:', weatherResponse.status);
+        console.log('Response headers:', weatherResponse.headers);
+        
+        if (!weatherResponse.ok) {
+            const errorText = await weatherResponse.text();
+            console.error('API Error Response:', errorText);
+            throw new Error(`HTTP ${weatherResponse.status}: ${errorText}`);
+        }
+        
         const weatherData = await weatherResponse.json();
+        console.log('Weather data received:', weatherData);
 
         updateWeatherData(weatherData);
         updateForecastData(weatherData);
@@ -847,7 +864,18 @@ async function fetchWeatherAndImage(location) {
         weatherDisplay.style.display = 'block';
     } catch (error) {
         console.error("Weather fetch error:", error);
-        errorDisplay.textContent = 'City not found. Please try again.';
+        let errorMessage = 'City not found. Please try again.';
+        
+        // More specific error messages
+        if (error.message.includes('403')) {
+            errorMessage = 'API key invalid or quota exceeded.';
+        } else if (error.message.includes('400')) {
+            errorMessage = 'Invalid city name. Please check spelling.';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage = 'Network error. Please check your connection.';
+        }
+        
+        errorDisplay.textContent = errorMessage;
         errorDisplay.style.display = 'block';
         weatherDisplay.style.display = 'none';
         appContainer.style.setProperty('--bg-image', 'none');
@@ -877,9 +905,17 @@ async function fetchLandmarkImage(city) {
         'cairo': 'Pyramids of Giza ancient monuments',
         'bhopal': 'Bhopal Upper Lake scenic view'
     };
+    
     const query = landmarks[city.toLowerCase()] || `${city} famous landmark architecture`;
+    
     try {
-        const imageResponse = await fetch(`${unsplashApiUrl}${query}&client_id=${unsplashApiKey}&orientation=landscape&per_page=3`);
+        const imageResponse = await fetch(`${unsplashApiUrl}${encodeURIComponent(query)}`);
+        
+        if (!imageResponse.ok) {
+            console.warn('Unsplash API failed:', imageResponse.status);
+            return;
+        }
+        
         const imageData = await imageResponse.json();
         if (imageData.results && imageData.results.length > 0) {
             const imageUrl = imageData.results[0].urls.regular;
