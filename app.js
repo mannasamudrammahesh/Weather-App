@@ -6,21 +6,11 @@ const forecastContainer = document.querySelector("#forecast-container");
 const weatherDisplay = document.querySelector(".weather");
 const errorDisplay = document.querySelector(".error");
 
-// Use Netlify Functions if available, fallback to direct API calls for development
-const isNetlify = window.location.hostname.includes('netlify') || window.location.hostname.includes('localhost');
-let weatherApiUrl, unsplashApiUrl;
+const weatherApiKey = 'YOUR_WEATHER_API_KEY_HERE';
+const unsplashApiKey = 'YOUR_UNSPLASH_API_KEY_HERE'; 
 
-if (isNetlify) {
-    // Production: Use Netlify Functions
-    weatherApiUrl = `/.netlify/functions/weather?location=`;
-    unsplashApiUrl = `/.netlify/functions/unsplash?query=`;
-} else {
-    // Development: Direct API calls (you'll need to replace these with your actual API keys for local testing)
-    const weatherApiKey = 'YOUR_WEATHER_API_KEY_HERE'; // Replace with your actual key
-    const unsplashApiKey = 'YOUR_UNSPLASH_API_KEY_HERE'; // Replace with your actual key
-    weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&aqi=yes&q=`;
-    unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=3&orientation=landscape&client_id=${unsplashApiKey}&query=`;
-}
+const weatherApiUrl = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&days=8&q=`;
+const unsplashApiUrl = `https://api.unsplash.com/search/photos?page=1&per_page=1&query=`;
 
 let scene, camera, renderer, currentAnimation, clock;
 
@@ -33,11 +23,7 @@ function initThreeJS() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
-    
-    const container = document.getElementById("threejs-container");
-    if (container) {
-        container.appendChild(renderer.domElement);
-    }
+    document.getElementById("threejs-container").appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
@@ -83,494 +69,7 @@ function createRain() {
             void main() {
                 float dist = length(gl_PointCoord - vec2(0.5));
                 if (dist > 0.5) discard;
-                gl_FragColor = vec4(u_color, alpha);
-            }
-        `
-    };
-
-    for (let i = 0; i < 30; i++) {
-        const planeGeometry = new THREE.PlaneGeometry(150, 150);
-        const mistMaterial = new THREE.ShaderMaterial({
-            ...mistShader,
-            transparent: true,
-            blending: THREE.NormalBlending,
-            depthWrite: false,
-        });
-
-        mistMaterial.uniforms = THREE.UniformsUtils.clone(mistShader.uniforms);
-
-        const mist = new THREE.Mesh(planeGeometry, mistMaterial);
-        mist.position.set(
-            (Math.random() - 0.5) * 600,
-            20 + Math.random() * 40,
-            -100 - Math.random() * 150
-        );
-        mist.scale.setScalar(2.0 + Math.random() * 1.0);
-
-        mists.push({
-            mesh: mist,
-            speed: 0.02 + Math.random() * 0.04,
-            initialY: mist.position.y,
-            bobSpeed: 0.0002 + Math.random() * 0.0003,
-            noiseScale: 1.5 + Math.random() * 2.0,
-            opacity: 0.3 + Math.random() * 0.4
-        });
-        group.add(mist);
-    }
-
-    const particleCount = 2000;
-    const particles = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const sizes = new Float32Array(particleCount);
-
-    for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 800;
-        positions[i * 3 + 1] = Math.random() * 50;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 800;
-        sizes[i] = 5 + Math.random() * 10;
-    }
-
-    particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-    const particleMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            time: { value: 0 },
-            color: { value: new THREE.Color(0xcccccc) }
-        },
-        vertexShader: `
-            attribute float size;
-            uniform float time;
-            void main() {
-                vec3 pos = position;
-                pos.x += sin(time * 0.2 + position.y) * 2.0;
-                pos.z += cos(time * 0.3 + position.x) * 2.0;
-                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                gl_PointSize = size * (150.0 / -mvPosition.z);
-                gl_Position = projectionMatrix * mvPosition;
-            }
-        `,
-        fragmentShader: `
-            uniform vec3 color;
-            void main() {
-                float dist = distance(gl_PointCoord, vec2(0.5));
-                if (dist > 0.5) discard;
-                gl_FragColor = vec4(color, (0.5 - dist) * 0.6);
-            }
-        `,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-    });
-
-    const mistParticles = new THREE.Points(particles, particleMaterial);
-    group.add(mistParticles);
-
-    return {
-        system: group,
-        update: (delta, time) => {
-            mists.forEach((mist, index) => {
-                mist.mesh.position.x += mist.speed * delta * 60;
-                if (mist.mesh.position.x > 400) {
-                    mist.mesh.position.x = -400;
-                }
-
-                mist.mesh.position.y = mist.initialY + Math.sin(time * mist.bobSpeed * 500 + index) * 5;
-
-                mist.mesh.material.uniforms.u_time.value = time;
-                mist.mesh.material.uniforms.u_noise_scale.value = mist.noiseScale;
-                mist.mesh.material.uniforms.u_opacity.value = mist.opacity;
-
-                mist.mesh.lookAt(camera.position);
-            });
-
-            particleMaterial.uniforms.time.value = time;
-        }
-    };
-}
-
-function createClearDay() {
-    return createSunny();
-}
-
-function createClearNight() {
-    return createNightClear();
-}
-
-function clearScene() {
-    while(scene.children.length > 0){
-        const child = scene.children[0];
-        scene.remove(child);
-
-        if (child instanceof THREE.Group) {
-            child.traverse(obj => {
-                if (obj.geometry) obj.geometry.dispose();
-                if (obj.material) {
-                    if (Array.isArray(obj.material)) {
-                        obj.material.forEach(m => m.dispose());
-                    } else {
-                        obj.material.dispose();
-                    }
-                }
-            });
-        } else {
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) {
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(m => m.dispose());
-                } else {
-                    child.material.dispose();
-                }
-            }
-        }
-    }
-    currentAnimation = null;
-}
-
-function updateWeatherAnimation(weatherType) {
-    clearScene();
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(50, 100, 75);
-    scene.add(directionalLight);
-
-    switch (weatherType) {
-        case 'rain':
-            currentAnimation = createRain();
-            break;
-        case 'snow':
-            currentAnimation = createSnow();
-            break;
-        case 'cloudy':
-            currentAnimation = createClouds();
-            break;
-        case 'mist':
-            currentAnimation = createMist();
-            break;
-        case 'sunny':
-            currentAnimation = createSunny();
-            break;
-        case 'night_clear':
-            currentAnimation = createNightClear();
-            break;
-        case 'clear_day':
-            currentAnimation = createClearDay();
-            break;
-        case 'clear_night':
-            currentAnimation = createClearNight();
-            break;
-        default:
-            clearScene();
-            return;
-    }
-
-    if (currentAnimation && currentAnimation.system) {
-        scene.add(currentAnimation.system);
-    }
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
-    const elapsedTime = clock.getElapsedTime();
-    if (currentAnimation && currentAnimation.update) {
-        currentAnimation.update(delta, elapsedTime);
-    }
-    renderer.render(scene, camera);
-}
-
-async function fetchWeatherAndImage(location) {
-    if (!location || !location.trim()) {
-        errorDisplay.textContent = 'Please enter a city name.';
-        errorDisplay.style.display = 'block';
-        return;
-    }
-
-    try {
-        console.log('Fetching weather for:', location);
-        console.log('Using API URL:', weatherApiUrl + encodeURIComponent(location));
-        
-        // Show loading state
-        errorDisplay.style.display = 'none';
-        
-        const weatherResponse = await fetch(`${weatherApiUrl}${encodeURIComponent(location)}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        console.log('Response status:', weatherResponse.status);
-        
-        if (!weatherResponse.ok) {
-            const errorText = await weatherResponse.text();
-            console.error('API Error Response:', errorText);
-            let errorMessage = 'City not found. Please try again.';
-            
-            // More specific error messages
-            if (weatherResponse.status === 403) {
-                errorMessage = 'API key invalid or quota exceeded.';
-            } else if (weatherResponse.status === 400) {
-                errorMessage = 'Invalid city name. Please check spelling.';
-            } else if (weatherResponse.status === 429) {
-                errorMessage = 'Too many requests. Please try again later.';
-            } else if (weatherResponse.status >= 500) {
-                errorMessage = 'Server error. Please try again later.';
-            }
-            
-            throw new Error(errorMessage);
-        }
-        
-        const weatherData = await weatherResponse.json();
-        console.log('Weather data received:', weatherData);
-
-        // Validate weather data structure
-        if (!weatherData || !weatherData.location || !weatherData.current) {
-            throw new Error('Invalid weather data received.');
-        }
-
-        updateWeatherData(weatherData);
-        updateForecastData(weatherData);
-
-        // Fetch landmark image (don't let this failure affect the weather display)
-        fetchLandmarkImage(weatherData.location.name).catch(err => {
-            console.warn("Landmark image fetch failed:", err);
-            appContainer.style.setProperty('--bg-image', 'none');
-        });
-        
-        errorDisplay.style.display = 'none';
-        weatherDisplay.style.display = 'block';
-        
-    } catch (error) {
-        console.error("Weather fetch error:", error);
-        
-        let errorMessage = error.message || 'Unable to fetch weather data. Please try again.';
-        
-        // Handle network errors
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            errorMessage = 'Network error. Please check your connection and try again.';
-        }
-        
-        errorDisplay.textContent = errorMessage;
-        errorDisplay.style.display = 'block';
-        weatherDisplay.style.display = 'none';
-        appContainer.style.setProperty('--bg-image', 'none');
-        updateWeatherAnimation('error');
-    }
-}
-
-async function fetchLandmarkImage(city) {
-    const landmarks = {
-        'tirupati': 'tirupati temple',
-        'delhi': 'India Gate',
-        'kolkata': 'Victoria Memorial white marble dome',
-        'mumbai': 'Gateway of India basalt arch monument',
-        'jaipur': 'Hawa Mahal pink palace windows',
-        'agra': 'Taj Mahal white marble mausoleum',
-        'chennai': 'Marina Beach lighthouse coastline',
-        'bangalore': 'Vidhana Soudha neo-dravidian architecture',
-        'hyderabad': 'Charminar four minarets monument',
-        'varanasi': 'Ganges River ghats ancient temples',
-        'shimla': 'The Ridge colonial architecture mountains',
-        'goa': 'Goa Beach palm trees coastline',
-        'new york': 'Manhattan skyline Empire State Building',
-        'paris': 'Eiffel Tower iron lattice tower',
-        'tokyo': 'Tokyo Tower red steel structure',
-        'london': 'Big Ben clock tower Westminster',
-        'sydney': 'Sydney Opera House shell architecture',
-        'cairo': 'Pyramids of Giza ancient monuments',
-        'bhopal': 'Bhopal Upper Lake scenic view',
-        'vadodara': 'Lakshmi Vilas Palace architecture'
-    };
-    
-    const query = landmarks[city.toLowerCase()] || `${city} famous landmark architecture`;
-    
-    try {
-        const imageResponse = await fetch(`${unsplashApiUrl}${encodeURIComponent(query)}`);
-        
-        if (!imageResponse.ok) {
-            console.warn('Unsplash API failed:', imageResponse.status);
-            return;
-        }
-        
-        const imageData = await imageResponse.json();
-        if (imageData && imageData.results && imageData.results.length > 0) {
-            const imageUrl = imageData.results[0].urls.regular;
-            appContainer.style.setProperty('--bg-image', `url(${imageUrl})`);
-        } else {
-            console.warn('No images found for:', query);
-            appContainer.style.setProperty('--bg-image', 'none');
-        }
-    } catch (error) {
-        console.error("Error fetching landmark image:", error);
-        appContainer.style.setProperty('--bg-image', 'none');
-    }
-}
-
-function updateWeatherData(data) {
-    try {
-        const cityElement = document.getElementById("city");
-        const tempElement = document.getElementById("temp");
-        const humidityElement = document.querySelector(".humidity");
-        const windElement = document.querySelector(".wind");
-        const conditionElement = document.getElementById("condition");
-
-        if (cityElement) cityElement.textContent = data.location.name;
-        if (tempElement) tempElement.textContent = `${Math.round(data.current.temp_c)}°C`;
-        if (humidityElement) humidityElement.textContent = `${data.current.humidity}%`;
-        if (windElement) windElement.textContent = `${Math.round(data.current.wind_kph)}`;
-
-        const conditionText = data.current.condition.text.toLowerCase();
-        if (conditionElement) conditionElement.textContent = conditionText;
-        
-        const isDay = data.current.is_day === 1;
-
-        // Update weather icon and animation based on condition
-        if (conditionText.includes('rain') || conditionText.includes('shower') || conditionText.includes('drizzle')) {
-            if (weatherIcon) weatherIcon.src = "images/rain.png";
-            updateWeatherAnimation('rain');
-        } else if (conditionText.includes('snow') || conditionText.includes('blizzard') || conditionText.includes('ice') || conditionText.includes('sleet')) {
-            if (weatherIcon) weatherIcon.src = "images/snow.png";
-            updateWeatherAnimation('snow');
-        } else if (conditionText.includes('cloud') || conditionText.includes('overcast')) {
-            if (weatherIcon) weatherIcon.src = "images/clouds.png";
-            updateWeatherAnimation('cloudy');
-        } else if (conditionText.includes('mist') || conditionText.includes('haze') || conditionText.includes('fog')) {
-            if (weatherIcon) weatherIcon.src = "images/mist.png";
-            updateWeatherAnimation('mist');
-        } else if (conditionText.includes('clear') || conditionText.includes('sunny')) {
-            if (weatherIcon) weatherIcon.src = "images/clear.png";
-            updateWeatherAnimation(isDay ? 'sunny' : 'night_clear');
-        } else {
-            if (weatherIcon) weatherIcon.src = "images/clear.png";
-            updateWeatherAnimation(isDay ? 'sunny' : 'night_clear');
-        }
-    } catch (error) {
-        console.error('Error updating weather data:', error);
-    }
-}
-
-function updateForecastData(data) {
-    try {
-        if (!forecastContainer || !data.forecast || !data.forecast.forecastday) {
-            console.warn('Forecast data incomplete');
-            return;
-        }
-
-        forecastContainer.innerHTML = '';
-        const forecastDays = data.forecast.forecastday.slice(1, 7); // Next 6 days
-        
-        forecastDays.forEach(day => {
-            const dayElement = document.createElement('div');
-            dayElement.className = 'forecast-day';
-            const date = new Date(day.date);
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-            
-            let iconSrc = "images/clear.png";
-            const condition = day.day.condition.text.toLowerCase();
-            
-            if (condition.includes('rain') || condition.includes('shower')) {
-                iconSrc = "images/rain.png";
-            } else if (condition.includes('snow')) {
-                iconSrc = "images/snow.png";
-            } else if (condition.includes('cloud')) {
-                iconSrc = "images/clouds.png";
-            } else if (condition.includes('mist') || condition.includes('fog')) {
-                iconSrc = "images/mist.png";
-            }
-            
-            dayElement.innerHTML = `
-                <div>${dayName}</div>
-                <img src="${iconSrc}" alt="${day.day.condition.text}" onerror="this.src='images/clear.png'">
-                <div>${Math.round(day.day.maxtemp_c)}°</div>
-            `;
-            forecastContainer.appendChild(dayElement);
-        });
-    } catch (error) {
-        console.error('Error updating forecast data:', error);
-    }
-}
-
-// Event Listeners
-if (searchBtn) {
-    searchBtn.addEventListener('click', () => {
-        const location = searchBox ? searchBox.value : '';
-        fetchWeatherAndImage(location);
-    });
-}
-
-if (searchBox) {
-    searchBox.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            fetchWeatherAndImage(searchBox.value);
-        }
-    });
-}
-
-// Window resize handler
-window.addEventListener('resize', () => {
-    if (!renderer || !camera) return;
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// Initialize everything when page loads
-window.addEventListener('load', () => {
-    console.log('Page loaded, initializing...');
-    
-    // Initialize Three.js
-    try {
-        initThreeJS();
-        animate();
-        console.log('Three.js initialized successfully');
-    } catch (error) {
-        console.error("Three.js initialization error:", error);
-    }
-    
-    // Hide preloader and load initial weather
-    setTimeout(() => {
-        const preloader = document.getElementById("preloader");
-        if (preloader) {
-            preloader.style.display = "none";
-        }
-        
-        // Try to get user's location, fallback to London
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    console.log('Got geolocation:', position.coords);
-                    fetchWeatherAndImage(`${position.coords.latitude},${position.coords.longitude}`);
-                },
-                (error) => {
-                    console.error("Geolocation error:", error);
-                    fetchWeatherAndImage("London");
-                },
-                {
-                    timeout: 10000,
-                    enableHighAccuracy: false,
-                    maximumAge: 300000
-                }
-            );
-        } else {
-            console.log('Geolocation not supported, using London');
-            fetchWeatherAndImage("London");
-        }
-    }, 500);
-});
-
-// Handle page errors
-window.addEventListener('error', (e) => {
-    console.error('Page error:', e.error);
-});
-
-// Handle unhandled promise rejections
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('Unhandled promise rejection:', e.reason);
-});color, 1.0 - dist * 2.0);
+                gl_FragColor = vec4(color, 1.0 - dist * 2.0);
             }
         `,
         transparent: true,
@@ -1134,4 +633,350 @@ function createMist() {
                 vec2 noise_uv = vUv + vec2(u_time * 0.03, u_time * 0.02);
                 float noise_val = fbm(noise_uv * u_noise_scale) * 1.2;
                 float alpha = circle_mask * noise_val * u_opacity * (0.8 + sin(u_time * 0.5) * 0.2);
-                gl_FragColor = vec4(
+                gl_FragColor = vec4(u_color, alpha);
+            }
+        `
+    };
+
+    for (let i = 0; i < 30; i++) {
+        const planeGeometry = new THREE.PlaneGeometry(150, 150);
+        const mistMaterial = new THREE.ShaderMaterial({
+            ...mistShader,
+            transparent: true,
+            blending: THREE.NormalBlending,
+            depthWrite: false,
+        });
+
+        mistMaterial.uniforms = THREE.UniformsUtils.clone(mistShader.uniforms);
+
+        const mist = new THREE.Mesh(planeGeometry, mistMaterial);
+        mist.position.set(
+            (Math.random() - 0.5) * 600,
+            20 + Math.random() * 40,
+            -100 - Math.random() * 150
+        );
+        mist.scale.setScalar(2.0 + Math.random() * 1.0);
+
+        mists.push({
+            mesh: mist,
+            speed: 0.02 + Math.random() * 0.04,
+            initialY: mist.position.y,
+            bobSpeed: 0.0002 + Math.random() * 0.0003,
+            noiseScale: 1.5 + Math.random() * 2.0,
+            opacity: 0.3 + Math.random() * 0.4
+        });
+        group.add(mist);
+    }
+
+    const particleCount = 2000;
+    const particles = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+
+    for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 800;
+        positions[i * 3 + 1] = Math.random() * 50;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 800;
+        sizes[i] = 5 + Math.random() * 10;
+    }
+
+    particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+    const particleMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0 },
+            color: { value: new THREE.Color(0xcccccc) }
+        },
+        vertexShader: `
+            attribute float size;
+            uniform float time;
+            void main() {
+                vec3 pos = position;
+                pos.x += sin(time * 0.2 + position.y) * 2.0;
+                pos.z += cos(time * 0.3 + position.x) * 2.0;
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (150.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            uniform vec3 color;
+            void main() {
+                float dist = distance(gl_PointCoord, vec2(0.5));
+                if (dist > 0.5) discard;
+                gl_FragColor = vec4(color, (0.5 - dist) * 0.6);
+            }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+
+    const mistParticles = new THREE.Points(particles, particleMaterial);
+    group.add(mistParticles);
+
+    return {
+        system: group,
+        update: (delta, time) => {
+            mists.forEach((mist, index) => {
+                mist.mesh.position.x += mist.speed * delta * 60;
+                if (mist.mesh.position.x > 400) {
+                    mist.mesh.position.x = -400;
+                }
+
+                mist.mesh.position.y = mist.initialY + Math.sin(time * mist.bobSpeed * 500 + index) * 5;
+
+                mist.mesh.material.uniforms.u_time.value = time;
+                mist.mesh.material.uniforms.u_noise_scale.value = mist.noiseScale;
+                mist.mesh.material.uniforms.u_opacity.value = mist.opacity;
+
+                mist.mesh.lookAt(camera.position);
+            });
+
+            particleMaterial.uniforms.time.value = time;
+        }
+    };
+}
+
+function createClearDay() {
+    return createSunny();
+}
+
+function createClearNight() {
+    return createNightClear();
+}
+
+function clearScene() {
+    while(scene.children.length > 0){
+        const child = scene.children[0];
+        scene.remove(child);
+
+        if (child instanceof THREE.Group) {
+            child.traverse(obj => {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) {
+                    if (Array.isArray(obj.material)) {
+                        obj.material.forEach(m => m.dispose());
+                    } else {
+                        obj.material.dispose();
+                    }
+                }
+            });
+        } else {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+        }
+    }
+    currentAnimation = null;
+}
+
+function updateWeatherAnimation(weatherType) {
+    clearScene();
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(50, 100, 75);
+    scene.add(directionalLight);
+
+    switch (weatherType) {
+        case 'rain':
+            currentAnimation = createRain();
+            break;
+        case 'snow':
+            currentAnimation = createSnow();
+            break;
+        case 'cloudy':
+            currentAnimation = createClouds();
+            break;
+        case 'mist':
+            currentAnimation = createMist();
+            break;
+        case 'sunny':
+            currentAnimation = createSunny();
+            break;
+        case 'night_clear':
+            currentAnimation = createNightClear();
+            break;
+        case 'clear_day':
+            currentAnimation = createClearDay();
+            break;
+        case 'clear_night':
+            currentAnimation = createClearNight();
+            break;
+        default:
+            clearScene();
+            return;
+    }
+
+    if (currentAnimation && currentAnimation.system) {
+        scene.add(currentAnimation.system);
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    const elapsedTime = clock.getElapsedTime();
+    if (currentAnimation && currentAnimation.update) {
+        currentAnimation.update(delta, elapsedTime);
+    }
+    renderer.render(scene, camera);
+}
+
+async function fetchWeatherAndImage(location) {
+    if (!location.trim()) return;
+
+    try {
+        const weatherResponse = await fetch(`${weatherApiUrl}${encodeURIComponent(location)}`);
+        if (!weatherResponse.ok) throw new Error('City not found');
+        const weatherData = await weatherResponse.json();
+
+        updateWeatherData(weatherData);
+        updateForecastData(weatherData);
+
+        fetchLandmarkImage(weatherData.location.name).catch(err => console.warn("Landmark image fetch failed:", err));
+        errorDisplay.style.display = 'none';
+        weatherDisplay.style.display = 'block';
+    } catch (error) {
+        console.error("Weather fetch error:", error);
+        errorDisplay.textContent = 'City not found. Please try again.';
+        errorDisplay.style.display = 'block';
+        weatherDisplay.style.display = 'none';
+        appContainer.style.setProperty('--bg-image', 'none');
+        updateWeatherAnimation('error');
+    }
+}
+
+async function fetchLandmarkImage(city) {
+    const landmarks = {
+        'tirupati': 'tirupati temple',
+        'delhi': 'India Gate',
+        'kolkata': 'Victoria Memorial white marble dome',
+        'mumbai': 'Gateway of India basalt arch monument',
+        'jaipur': 'Hawa Mahal pink palace windows',
+        'agra': 'Taj Mahal white marble mausoleum',
+        'chennai': 'Marina Beach lighthouse coastline',
+        'bangalore': 'Vidhana Soudha neo-dravidian architecture',
+        'hyderabad': 'Charminar four minarets monument',
+        'varanasi': 'Ganges River ghats ancient temples',
+        'shimla': 'The Ridge colonial architecture mountains',
+        'goa': 'Goa Beach palm trees coastline',
+        'new york': 'Manhattan skyline Empire State Building',
+        'paris': 'Eiffel Tower iron lattice tower',
+        'tokyo': 'Tokyo Tower red steel structure',
+        'london': 'Big Ben clock tower Westminster',
+        'sydney': 'Sydney Opera House shell architecture',
+        'cairo': 'Pyramids of Giza ancient monuments',
+        'bhopal': 'Bhopal Upper Lake scenic view'
+    };
+    const query = landmarks[city.toLowerCase()] || `${city} famous landmark architecture`;
+    try {
+        const imageResponse = await fetch(`${unsplashApiUrl}${query}&client_id=${unsplashApiKey}&orientation=landscape&per_page=3`);
+        const imageData = await imageResponse.json();
+        if (imageData.results && imageData.results.length > 0) {
+            const imageUrl = imageData.results[0].urls.regular;
+            appContainer.style.setProperty('--bg-image', `url(${imageUrl})`);
+        } else {
+            appContainer.style.setProperty('--bg-image', 'none');
+        }
+    } catch (error) {
+        console.error("Error fetching landmark image:", error);
+        appContainer.style.setProperty('--bg-image', 'none');
+    }
+}
+
+function updateWeatherData(data) {
+    document.getElementById("city").textContent = data.location.name;
+    document.getElementById("temp").textContent = `${Math.round(data.current.temp_c)}°C`;
+    document.querySelector(".humidity").textContent = `${data.current.humidity}%`;
+    document.querySelector(".wind").textContent = `${Math.round(data.current.wind_kph)}`;
+
+    const conditionText = data.current.condition.text.toLowerCase();
+    document.getElementById("condition").textContent = conditionText;
+    const isDay = data.current.is_day === 1;
+
+    if (conditionText.includes('rain') || conditionText.includes('shower') || conditionText.includes('drizzle')) {
+        weatherIcon.src = "images/rain.png";
+        updateWeatherAnimation('rain');
+    } else if (conditionText.includes('snow') || conditionText.includes('blizzard') || conditionText.includes('ice') || conditionText.includes('sleet')) {
+        weatherIcon.src = "images/snow.png";
+        updateWeatherAnimation('snow');
+    } else if (conditionText.includes('cloud') || conditionText.includes('overcast')) {
+        weatherIcon.src = "images/clouds.png";
+        updateWeatherAnimation('cloudy');
+    } else if (conditionText.includes('mist') || conditionText.includes('haze') || conditionText.includes('fog')) {
+        weatherIcon.src = "images/mist.png";
+        updateWeatherAnimation('mist');
+    } else if (conditionText.includes('clear') || conditionText.includes('sunny')) {
+        weatherIcon.src = "images/clear.png";
+        updateWeatherAnimation(isDay ? 'sunny' : 'night_clear');
+    } else {
+        weatherIcon.src = "images/clear.png";
+        updateWeatherAnimation(isDay ? 'sunny' : 'night_clear');
+    }
+}
+
+function updateForecastData(data) {
+    forecastContainer.innerHTML = '';
+    const forecastDays = data.forecast.forecastday.slice(1, 7);
+    forecastDays.forEach(day => {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'forecast-day';
+        const date = new Date(day.date);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+        let iconSrc = "images/clear.png";
+        const condition = day.day.condition.text.toLowerCase();
+        if (condition.includes('rain') || condition.includes('shower')) iconSrc = "images/rain.png";
+        else if (condition.includes('snow')) iconSrc = "images/snow.png";
+        else if (condition.includes('cloud')) iconSrc = "images/clouds.png";
+        else if (condition.includes('mist') || condition.includes('fog')) iconSrc = "images/mist.png";
+        dayElement.innerHTML = `
+            <div>${dayName}</div>
+            <img src="${iconSrc}" alt="${day.day.condition.text}">
+            <div>${Math.round(day.day.maxtemp_c)}°</div>
+        `;
+        forecastContainer.appendChild(dayElement);
+    });
+}
+
+searchBtn.addEventListener('click', () => fetchWeatherAndImage(searchBox.value));
+searchBox.addEventListener('keypress', (e) => { if (e.key === 'Enter') fetchWeatherAndImage(searchBox.value); });
+
+window.addEventListener('resize', () => {
+    if (!renderer || !camera) return;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('load', () => {
+    try {
+        initThreeJS();
+        animate();
+    } catch (error) {
+        console.error("Three.js initialization error:", error);
+    }
+    setTimeout(() => {
+        const preloader = document.getElementById("preloader");
+        if (preloader) preloader.style.display = "none";
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => fetchWeatherAndImage(`${position.coords.latitude},${position.coords.longitude}`),
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    fetchWeatherAndImage("London");
+                }
+            );
+        } else {
+            fetchWeatherAndImage("London");
+        }
+    }, 500);
+});
